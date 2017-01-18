@@ -2,10 +2,10 @@
 An easy to install AI development environment for the game of Go.
 
 ## Table of Contents
-1. [Installation](##Installation)
-2. [Using the Virtual Environment](#Using-the-Virtual-Environment)
-3. [Development](#Development)
-4. [Purpose](#Purpose)
+1. Installation
+2. Using the Virtual Environment
+3. Development
+4. Purpose
 
 ## Installation
 Installation is relatively straightforward. Clone this repository and then run the installation script.
