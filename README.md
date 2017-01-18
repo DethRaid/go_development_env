@@ -10,7 +10,7 @@ An easy to install AI development environment for the game of Go.
 ## Installation
 Installation is relatively straightforward. Clone this repository and then run the installation script.
 ```bash
-$ git clone git@github.com:RITificialIntelligence/go_development_env.git
+$ git clone git@github.com:RITficialIntelligence/go_development_env.git
 $ cd go_development_env
 $ ./scripts/install.sh
 ```
