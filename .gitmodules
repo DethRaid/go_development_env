@@ -1,0 +1,3 @@
+[submodule "scoring/3rdparty/keras"]
+	path = scoring/3rdparty/keras
+	url = git@github.com:fchollet/keras.git
