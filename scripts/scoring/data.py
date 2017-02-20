@@ -1,10 +1,12 @@
 """Defines the classes which hold the go board data
 """
 
-import numpy as np
 import binascii
 import logging
 
+import sys
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 __log = logging.getLogger('Data Loader')
 
 
@@ -52,7 +54,12 @@ def load_data(data_file_location):
         board_array = convert_to_vector(board_state)
 
         num_empty_spaces = board_state.count('.')
-        __log.info('There are ' + str(num_empty_spaces) + ' empty spaces in board number ' + str(count))
+        num_white_pieces = board_state.count('O')
+        num_black_pieces = board_state.count('#')
+        __log.debug('There are %s empty spaces, %s white pieces, and %s black pieces in board number %s' % (num_empty_spaces, num_white_pieces, num_black_pieces, count))
+
+        if num_empty_spaces + num_black_pieces + num_white_pieces < 81:
+            __log.error('There are fewer than 81 spaces in board number %s' % count)
 
         if board_state.count('.') == 80 and len(cur_game) > 0:
             # All but one piece is an empty space. This means that a new game has just started
