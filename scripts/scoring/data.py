@@ -3,6 +3,9 @@
 
 import numpy as np
 import binascii
+import logging
+
+__log = logging.getLogger('Data Loader')
 
 
 def get_winner(board_state):
@@ -37,6 +40,7 @@ def load_data(data_file_location):
     num_moves_processed = 0
     num_games = 0
     last_board_state = '.'
+    count = 0
 
     while True:
         hash = data_file.read(8)
@@ -47,6 +51,9 @@ def load_data(data_file_location):
 
         board_array = convert_to_vector(board_state)
 
+        num_empty_spaces = board_state.count('.')
+        __log.info('There are ' + str(num_empty_spaces) + ' empty spaces in board number ' + str(count))
+
         if board_state.count('.') == 80 and len(cur_game) > 0:
             # All but one piece is an empty space. This means that a new game has just started
             # Now we need to figure out the winner of the game
@@ -54,16 +61,18 @@ def load_data(data_file_location):
             games.append((cur_game, black_win_chance))
             cur_game = list()
             num_games += 1
-            print 'Processed ' + str(num_moves_processed) + ' moves, which has given us ' + str(num_games) + ' games'
+            __log.info('Processed ' + str(num_moves_processed) + ' moves, which has given us ' + str(num_games) + ' games')
 
         else:
             cur_game.append(board_array)
 
         if has_position_extra_info == 1:
+            __log.info('Board number %s has extra info' % count)
             data_file.read(8)
 
         num_moves_processed += 1
         last_board_state = board_state
+        count += 1
 
     return games
 
