@@ -112,8 +112,8 @@ class QNetwork(object):
         self.model = Sequential()
         self.model.add(Convolution2D(4, 5, 5, input_shape=(4, 9, 9), activation='relu', dim_ordering='th'))
         self.model.add(Convolution2D(8, 3, 3, activation='relu', dim_ordering='th'))
-        self.model.add(Convolution2D(16, 2, 2, activation='relu', dim_ordering='th'))
-        self.model.add(Dense(512, activation='relu'))
+        self.model.add(Convolution2D(8, 2, 2, activation='relu', dim_ordering='th'))
+        self.model.add(Dense(256, activation='relu'))
         self.model.add(Dense(81, activation='linear'))
 
         self.model.compile(SGD(lr=.2), 'mse')
