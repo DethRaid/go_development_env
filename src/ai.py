@@ -58,9 +58,10 @@ class LstmAi(object):
 
         self.reward_estimator = QNetwork()
 
-        self.observations = list()
+        self.last_board_state = np.empty([9, 9])
+        self.last_action = 82
 
-    def act(self, observation, reward, _):
+    def act(self, observation, reward, done):
         """Performs an action
 
         :param observation: The current state of the board. Observations[0] is where my pieces are, observations[1] is
@@ -73,22 +74,26 @@ class LstmAi(object):
 
         board_state = make_board_state(observation)
         rewards = self.reward_estimator.get_rewards(board_state)
-
-        self.observations.append([board_state, rewards])
+        self.reward_estimator.remember([self.last_board_state, self.last_action, rewards, board_state], done)
 
         move = self.model.predict(np.array([board_state]), batch_size=1)[0][0]
+        action = 0
         if move[3] > 0.1:
             self.logger.info('Forfeiting the game')
-            return 82
+            action = 82
 
         elif move[2] > 0.1:
             self.logger.info('Passing this turn')
-            return 81
+            action = 81
 
         else:
-            space = math.floor(move[0] * 9 + move[1] * 9 * 9)
-            self.logger.info('Placing a piece on %s' % space)
-            return space
+            action = math.floor(move[0] * 9 + move[1] * 9 * 9)
+            self.logger.info('Placing a piece on %s' % action)
+
+        self.last_board_state = board_state
+        self.last_action = action
+
+        return action
 
 
 class QNetwork(object):
@@ -97,7 +102,7 @@ class QNetwork(object):
     Because arbitrary board sizes are hard, this network will output Q-values for invalid moves. Hopefully it will
     learn that they are invalid (or I'll figure out how to teach it that)"""
 
-    def __init__(self):
+    def __init__(self, max_memory=50, discout=0.9):
         """Builds the CNN model
 
         The model takes the last four game states and convolves them into a single Q value. This model is based heavily
@@ -113,7 +118,9 @@ class QNetwork(object):
 
         self.model.compile(SGD(lr=.2), 'mse')
 
-        self.history = list()
+        self.memory = list()
+        self.max_memory = max_memory
+        self.discount = discout
 
     def get_rewards(self, board_state):
         """Calculates the rewards for the moves you might make at this board state
@@ -122,11 +129,27 @@ class QNetwork(object):
          a piece, and 0 means there's no piece
         :return: The rewards for each move you might make
         """
-        self.history.append(board_state)
 
         inputs = list()
-        for i in range(4):
-            input = random.randint(0, len(self.history) - 1)
-            inputs.append(self.history[input])
+        for i in range(-3, 0):
+            if len(self.memory) == 0:
+                inputs.append(board_state)
+            else:
+                input = random.randint(0, len(self.memory) - 1)
+                inputs.append(self.memory[input][0][0])
 
-        return self.model.predict(np.array([inputs]))[0][0]
+        inputs.append(board_state)
+
+        data_to_predict_on = np.array([inputs])
+        return self.model.predict(data_to_predict_on)[0][0]
+
+    def remember(self, state, game_over):
+        """Remembers the state of the board
+
+        :param state: The state of the board. [state, action, reward, next_state]
+        :param game_over: True if the game ended this turn, false otherwise
+        """
+        if len(self.memory) > self.max_memory:
+            del self.memory[0]
+
+        self.memory.append([state, game_over])
