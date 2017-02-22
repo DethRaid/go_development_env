@@ -166,3 +166,5 @@ pip-selfcheck.json
 src/references
 src/scoring/3rdparty
 **.dat
+**.directory
+cmake-build-debug/
