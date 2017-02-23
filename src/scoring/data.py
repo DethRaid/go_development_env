@@ -12,12 +12,11 @@ import struct
 
 from multiprocessing import Pool
 
-import multiprocessing
+import numpy as np
 
 import time
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-__log = logging.getLogger('Data Loader')
+import cPickle as pickle
 
 
 def load_positions(data_file_location):
@@ -37,12 +36,13 @@ def load_positions(data_file_location):
 
     while read_bytes < data_file_size:
         zorbitz = data_file.read(8)
-        data_file.read(2)
+        data_file.read(1)
+        who_plays_next = data_file.read(1)
         board_state = data_file.read(81)
         has_position_extra_info = binascii.hexlify(data_file.read(1))
         read_bytes += 92
 
-        board_array = convert_to_vector(board_state)
+        board_array = convert_to_vector(board_state, who_plays_next == 'W')
 
         positions[zorbitz] = board_array
 
@@ -96,21 +96,29 @@ def load_scores(scores_file_location):
 
 
 scores = list()
-count = 0
-last_time = 0
 
 
 def thread_func(x):
     global scores
-    global count
-    if x[0] in scores.keys():
-        count += 1
-        if count % 50 == 0:
-            global last_time
-            cur_time = time.clock()
-            __log.info('Correlated %s scores and positions in %s seconds' % (count, cur_time - last_time))
-            last_time = cur_time
+    try:
         return x[1], scores[x[0]]
+    except Exception:
+        # Yes, empty catch block. Failures aren't important to me here.
+        pass
+
+
+def convert_to_matrix(to_convert):
+    """Converts a 81-element array into a 9x9 numpy matrix
+
+    :param to_convert: The 81-element array to convert
+    :return: a 9x9 numpy matrix for the array
+    """
+    mat = np.empty([9, 9])
+    for y in range(9):
+        for x in range(9):
+            mat[y][x] = to_convert[x + y * 9]
+
+    return mat
 
 
 def get_data():
@@ -123,40 +131,59 @@ def get_data():
     global scores
     scores = load_scores('data/fuego_chinese.dat')
 
-    global last_time
-    last_time = time.clock()
+    # 49.2999 seconds with 2 threads in run mode
+    # 42.6354 seconds with 4 threads in run mode
+    # 44.4638 seconds with 6 threads in run mode
+    # 45.0285 seconds with 8 threads in run mode
+    num_threads = 3
 
-    positions_list = list()
-    scores_list = list()
-
-    p = Pool(4)
+    start_time = time.clock()
+    p = Pool(num_threads)
     data = p.map(thread_func, positions.items())
+    end_time = time.clock()
 
-    return data
+    __log.info('Correlated the scores in %s seconds with %s threads' % (end_time - start_time, num_threads))
+
+    data_no_null = [x for x in data if x is not None]
+    data_lists = map(list, zip(*data_no_null))
+    data_lists[0] = map(convert_to_matrix, data_lists[0])
+
+    return {'positions': data_lists[0], 'scores': data_lists[1]}
 
 
-def convert_to_vector(board_state):
+def convert_to_vector(board_state, white_plays_next):
     """Converts the given board from a string to an array of number so that the numbers can be fed into the RNN
 
     :param board_state: The board state as a string. Periods mean empty spaces, #s mean black pieces, Os mean white
     pieces
     :return: An array for the board. The array has 0 for empty spaces, 1 for black pieces, and -1 for white pieces
     """
+
+    if white_plays_next:
+        conversion = {'.': 0, '#': 1, 'O': -1}
+    else:
+        conversion = {'.': 0, '#': -1, 'O': 1}
+
     board_array = list()
     for char in board_state:
-        if char == '.':
+        try:
+            board_array.append(conversion[char])
+        except Exception as e:
+            __log.error('Could not convert char %s' % char)
             board_array.append(0)
-        elif char == '#':
-            board_array.append(1)
-        elif char == 'O':
-            board_array.append(-1)
+
     return board_array
 
 
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    __log = logging.getLogger('Data Loader')
+
     data = get_data()
-    # data = {'positions': position_list, 'scores': score_list}
 
-    with open('training_data.json', 'w') as jsonfile:
-        json.dump(data, jsonfile)
+    with open('data/training_data.p', 'w') as datafile:
+        start_time = time.clock()
+        pickle.dump(data, datafile)
+        end_time = time.clock()
 
+        __log.info('Saved data in %s seconds' % (end_time - start_time))

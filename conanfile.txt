@@ -1,5 +1,6 @@
 [requires]
 easyloggingpp/9.80@memsharded/testing
+RapidJSON/1.0.2@SamuelMarks/stable
 
 [generators]
 cmake

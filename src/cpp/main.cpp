@@ -67,6 +67,8 @@ std::unordered_map<std::string, char[81]> load_positions(std::string positions_f
             }
         }
 
+        LOG(INFO) << "Read in " << count << " positions total";
+
         return positions;
 
     } else {
@@ -124,11 +126,15 @@ std::unordered_map<std::string, int> load_scores(std::string scores_file_name) {
             scores_file.read(&score, 1);
             scores_file.read(&confidence, 1);
 
+            scores[zorbitz] = score;
+
             count++;
             if(count % 10000 == 0) {
                 LOG(INFO) << "Read in " << count << " scores";
             }
         }
+
+        LOG(INFO) << "Read in " << count << " scores total";
 
         return scores;
 
@@ -137,10 +143,36 @@ std::unordered_map<std::string, int> load_scores(std::string scores_file_name) {
     }
 }
 
+/*!
+ * Takes the scores and positions
+ *
+ * \param positions
+ * \param scores
+ * \return
+ */
+std::pair<std::vector<char[81]>, std::vector<int>> corellate_scores_with_positions(
+        std::unordered_map<std::string, char[81]> positions,
+        std::unordered_map<std::string, int> scores) {
+    auto position_list = std::vector<char[81]>{};
+    auto score_list = std::vector<int>{};
+
+    for(auto& position_entry : positions) {
+        auto score_location = scores.find(position_entry.first);
+        if(score_location != scores.end()) {
+            position_list.push_back(position_entry.second);
+            score_list.push_back((*score_location).second);
+        }
+    }
+
+    return std::make_pair(position_list, score_list);
+}
+
 int main() {
     initialize_logging();
 
     auto positions = load_positions("data/input_positions.dat");
+    auto scores = load_scores("data/fuego_chinese.dat");
+    auto data = corellate_scores_with_positions(positions, scores);
 
     return 0;
 }
