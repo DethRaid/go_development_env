@@ -167,6 +167,7 @@ std::pair<std::vector<char[81]>, std::vector<int>> corellate_scores_with_positio
     return std::make_pair(position_list, score_list);
 }
 
+/*
 int main() {
     initialize_logging();
 
@@ -175,4 +176,4 @@ int main() {
     auto data = corellate_scores_with_positions(positions, scores);
 
     return 0;
-}
+}*/

@@ -170,3 +170,4 @@ src/scoring/3rdparty
 cmake-build-debug/
 **.p
 **.json
+**/3rdparty

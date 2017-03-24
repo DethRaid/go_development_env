@@ -7,7 +7,7 @@ conan_basic_setup()
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES
-        src/cpp/main.cpp
+        src/main/cpp/main.cpp
         src/references/gym_example.py
         src/references/qlearn.py
         src/references/test.py

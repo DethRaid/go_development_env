@@ -1,3 +1,6 @@
 [submodule "scoring/3rdparty/keras"]
 	path = scoring/3rdparty/keras
 	url = git@github.com:fchollet/keras.git
+[submodule "src/main/cpp/3rdparty/caffe"]
+	path = src/main/cpp/3rdparty/caffe
+	url = https://github.com/BVLC/caffe.git

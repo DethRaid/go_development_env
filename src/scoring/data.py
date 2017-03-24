@@ -83,7 +83,7 @@ def load_scores(scores_file_location):
         confidence = struct.unpack('<B', data_file.read(1))[0]
         read_bytes += 12
 
-        scores[zorbitz] = (score, confidence)
+        scores[zorbitz] = [score, confidence]
 
         count += 1
         if count % 10000 == 0:
@@ -139,13 +139,13 @@ def get_data():
 
     start_time = time.clock()
     p = Pool(num_threads)
-    data = p.map(thread_func, positions.items())
+    data = np.array(p.map(thread_func, positions.items()))
     end_time = time.clock()
 
     __log.info('Correlated the scores in %s seconds with %s threads' % (end_time - start_time, num_threads))
 
-    data_no_null = [x for x in data if x is not None]
-    data_lists = map(list, zip(*data_no_null))
+    data_no_null = np.array([x for x in data if x is not None])
+    data_lists = np.array(map(list, zip(*data_no_null)))
     data_lists[0] = map(convert_to_matrix, data_lists[0])
 
     return {'positions': data_lists[0], 'scores': data_lists[1]}
@@ -168,7 +168,7 @@ def convert_to_vector(board_state, white_plays_next):
     for char in board_state:
         try:
             board_array.append(conversion[char])
-        except Exception as e:
+        except:
             __log.error('Could not convert char %s' % char)
             board_array.append(0)
 
@@ -179,11 +179,14 @@ if __name__ == '__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     __log = logging.getLogger('Data Loader')
 
+    start_time = time.clock()
     data = get_data()
+    end_time = time.clock()
+    __log.info('Loaded data from disk in %s seconds' % (end_time - start_time))
 
-    with open('data/training_data.p', 'w') as datafile:
+    with open('data/training_data.p', 'wb') as datafile:
         start_time = time.clock()
-        pickle.dump(data, datafile)
+        pickle.dump(data, datafile, pickle.HIGHEST_PROTOCOL)
         end_time = time.clock()
 
         __log.info('Saved data in %s seconds' % (end_time - start_time))
