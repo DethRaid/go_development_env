@@ -18,7 +18,12 @@ import logging
 
 
 class GoScorer(object):
-    """Contains a model which can score a Go board"""
+    """Contains a model which can score a Go board
+
+    TODO: Make the AI in the AI Gym play itself to get game data
+    Train the Q-network on the data from the gym
+    Party
+    """
 
     def __init__(self, model_path=None):
         """Initializes this model
@@ -29,22 +34,24 @@ class GoScorer(object):
         """
         self.log = logging.getLogger('GoScorer')
 
+        self.previous_board = np.empty([9, 9])
+
         if model_path is None:
             self.log.info('Creating default model')
-            self.model = Sequential()
+            self.q_network = Sequential()
 
-            self.model.add(Convolution2D(32, 5, 5, input_shape=(1, 9, 9), activation='relu', dim_ordering='th'))
-            self.model.add(Convolution2D(64, 3, 3, activation='relu', dim_ordering='th'))
-            self.model.add(Convolution2D(64, 2, 2, activation='relu', dim_ordering='th'))
-            self.model.add(Flatten())
-            self.model.add(Dense(256, activation='relu'))
-            self.model.add(Dense(1, activation='relu'))
+            self.q_network.add(Convolution2D(32, 5, 5, input_shape=(1, 9, 9), activation='relu', dim_ordering='th'))
+            self.q_network.add(Convolution2D(64, 3, 3, activation='relu', dim_ordering='th'))
+            self.q_network.add(Convolution2D(64, 2, 2, activation='relu', dim_ordering='th'))
+            self.q_network.add(Flatten())
+            self.q_network.add(Dense(256, activation='relu'))
+            self.q_network.add(Dense(83, activation='linear'))
 
-            self.model.compile(optimizer=SGD(lr=.2), loss='mse', metrics=['accuracy'])
+            self.q_network.compile(optimizer=SGD(lr=.2), loss='mse', metrics=['accuracy'])
 
         else:
             self.log.info('Loading model from %s' % model_path)
-            self.model = load_model(model_path)
+            self.q_network = load_model(model_path)
 
     def train(self, positions, scores):
         """Trains this model on the provided boards and scores
@@ -61,16 +68,15 @@ class GoScorer(object):
         try:
             # positions = [x for x in positions]
             positions_np = np.array(positions)
-            scores = [np.array([x[0] / 8]) for x in scores]
             scores_np = np.array(scores)
 
             self.log.info('First board: \n%s' % str(positions_np[0]))
             self.log.info('First score: \n%s' % str(scores_np[0]))
 
-            self.model.fit(positions_np, scores_np, nb_epoch=100, batch_size=300)
+            self.q_network.fit(positions_np, scores_np, nb_epoch=100, batch_size=300)
             end_time = time.clock()
             self.log.info('Model training complete in %s seconds' % (end_time - start_time))
-            self.model.save('go_scoring.h5')
+            self.q_network.save('go_scoring.h5')
             self.log.info('Model saved')
         except Exception as e:
             end_time = time.clock()
@@ -88,7 +94,22 @@ class GoScorer(object):
         :return: The score of the board
         """
 
-        return self.model.predict(np.array(board), batch_size=1)
+        board_np = np.array(board)
+
+        action_rewards = self.q_network.predict(board_np, batch_size=1)
+
+        max = 0
+        for i in range(len(action_rewards)):
+            if action_rewards[i] > action_rewards[max]:
+                max = i
+
+        if max == 82:
+            # We're passing this turn
+            next_board = board_np
+
+        if max == 83:
+            # We're giving up
+            return 83
 
 
 if __name__ == '__main__':
@@ -104,7 +125,7 @@ if __name__ == '__main__':
         __log.info('Read in training data in %s seconds' % (end_time - start_time))
 
         positions_data = [[x] for x in data['positions']]
-        scores_data = data['scores']
+        scores_data = [np.array([x[0] / 8]) for x in data['scores']]
 
         __log.info('Training on %s examples with %s labels' % (len(positions_data), len(scores_data)))
 
