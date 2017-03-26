@@ -25,7 +25,7 @@ class GoScorer(object):
     Party
     """
 
-    def __init__(self, model_path=None):
+    def __init__(self, model_path=None, learning_rate=0.9):
         """Initializes this model
 
         :param model_path: The path to where the model is stored on disk. If this parameter is not provided, or is set
@@ -33,6 +33,7 @@ class GoScorer(object):
          data
         """
         self.log = logging.getLogger('GoScorer')
+        self.learning_rate = learning_rate
 
         self.previous_board = np.empty([9, 9])
 
@@ -87,7 +88,7 @@ class GoScorer(object):
                 self.log.error('(%s hours)' % ((end_time - start_time) / 3600))
             self.log.error('Reason: %s' % e)
 
-    def get_score(self, board):
+    def process_turn(self, board):
         """Retrieves the score for a particular board
 
         :param board: The board to get the score for
@@ -96,20 +97,35 @@ class GoScorer(object):
 
         board_np = np.array(board)
 
-        action_rewards = self.q_network.predict(board_np, batch_size=1)
+        # This is kinda weird. We update the network here for what happened last turn because we need two consecuive
+        # board states in order to properly Q-learn. We have the last board state, and we ahve this board state, so we
+        # can party
+
+        rewards = self.q_network.predict(self.previous_board)
+
+        max_r = 0
+        for i in range(len(rewards)):
+            if rewards[i] > rewards[max_r]:
+                max_r = i
+
+        rewards_next = self.q_network.predict(board_np)
+        max_rn = 0
+        for i in range(len(rewards_next)):
+            if rewards_next[i] > rewards_next[max_rn]:
+                max_rn = i
+
+        rewards[max_r] += self.learning_rate * rewards_next[max_rn]
+
+        self.previous_board = board_np
+
+        action_rewards = self.q_network.predict(board_np)
 
         max = 0
         for i in range(len(action_rewards)):
             if action_rewards[i] > action_rewards[max]:
                 max = i
 
-        if max == 82:
-            # We're passing this turn
-            next_board = board_np
-
-        if max == 83:
-            # We're giving up
-            return 83
+        return max
 
 
 if __name__ == '__main__':
