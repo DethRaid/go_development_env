@@ -1,17 +1,18 @@
 """Main file to run my Go AI
 """
 
-import gym
+import logging
 import sys
+from ctypes import cdll
 
+import gym
 from keras.layers import Convolution2D, Flatten, Dense
 from keras.models import Sequential
 from keras.optimizers import SGD
 from qlearning4k import Agent
 from qlearning4k.games.game import Game
 
-from ai import LstmAi
-import logging
+lib = cdll.LoadLibrary('./libgo_scoring.so')
 
 class Go(Game):
     def __init__(self, render=False):
@@ -47,7 +48,8 @@ class Go(Game):
         if not self.done:
             return False
 
-        return True
+        score = lib.score(self.state)
+        return score > 0
 
 
 if __name__ == '__main__':
