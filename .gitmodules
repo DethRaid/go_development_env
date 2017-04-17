@@ -4,3 +4,6 @@
 [submodule "src/main/cpp/3rdparty/caffe"]
 	path = src/main/cpp/3rdparty/caffe
 	url = https://github.com/BVLC/caffe.git
+[submodule "score-estimator"]
+	path = score-estimator
+	url = https://github.com/online-go/score-estimator.git

@@ -43,6 +43,12 @@ class Go(Game):
     def is_over(self):
         return self.done
 
+    def is_won(self):
+        if not self.done:
+            return False
+
+        return True
+
 
 if __name__ == '__main__':
     gym.undo_logger_setup()

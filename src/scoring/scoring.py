@@ -46,7 +46,7 @@ class GoScorer(object):
             self.q_network.add(Convolution2D(64, 2, 2, activation='relu', dim_ordering='th'))
             self.q_network.add(Flatten())
             self.q_network.add(Dense(256, activation='relu'))
-            self.q_network.add(Dense(83, activation='linear'))
+            self.q_network.add(Dense(1, activation='linear'))
 
             self.q_network.compile(optimizer=SGD(lr=.2), loss='mse', metrics=['accuracy'])
 
@@ -74,7 +74,7 @@ class GoScorer(object):
             self.log.info('First board: \n%s' % str(positions_np[0]))
             self.log.info('First score: \n%s' % str(scores_np[0]))
 
-            self.q_network.fit(positions_np, scores_np, nb_epoch=100, batch_size=300)
+            self.q_network.fit(positions_np, scores_np, nb_epoch=5070, batch_size=300)
             end_time = time.clock()
             self.log.info('Model training complete in %s seconds' % (end_time - start_time))
             self.q_network.save('go_scoring.h5')
