@@ -14,7 +14,7 @@ set(SOURCE_FILES
         src/scoring/data.py
         src/scoring/scoring.py
         src/ai.py
-        src/main.py)
+        src/main.py src/scoring/go_estimator.c src/scoring/go_estimator.h)
 
 add_executable(go_ai ${SOURCE_FILES})
 target_link_libraries(go_ai ${CONAN_LIBS})
